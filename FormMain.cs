@@ -15,9 +15,6 @@ namespace FolderCompare
             textBoxToPath.Text = Settings.Default.LastToPath;
         }
 
-        private List<string> fromList = new List<string>();
-        private List<string> toList = new List<string>();
-
         private void buttonCompare_Click(object sender, EventArgs e)
         {
             if (!Directory.Exists(textBoxFromPath.Text)) return;
@@ -25,21 +22,34 @@ namespace FolderCompare
             Settings.Default.LastFromPath = textBoxFromPath.Text;
             Settings.Default.LastToPath = textBoxToPath.Text;
             Settings.Default.Save();
+            listBoxMain.Items.Clear();
+            DoCompare(textBoxFromPath.Text, textBoxToPath.Text);
+        }
+
+        private void DoCompare(string fromPath, string toPath)
+        {
+            List<string> fromList = new List<string>();
+            List<string> toList = new List<string>();
             fromList.Clear();
             toList.Clear();
-            listBoxMain.Items.Clear();
-            foreach (string s in Directory.EnumerateFiles(textBoxFromPath.Text))
+            if (Directory.Exists(fromPath))
             {
-                if (ValidFilename(s))
+                foreach (string s in Directory.EnumerateFiles(fromPath))
                 {
-                    fromList.Add(s.Substring(s.LastIndexOf('\\') + 1));
+                    if (ValidFilename(s))
+                    {
+                        fromList.Add(s.Substring(textBoxFromPath.Text.Length + 1));
+                    }
                 }
             }
-            foreach (string s in Directory.EnumerateFiles(textBoxToPath.Text))
+            if (Directory.Exists(toPath))
             {
-                if (ValidFilename(s))
+                foreach (string s in Directory.EnumerateFiles(toPath))
                 {
-                    toList.Add(s.Substring(s.LastIndexOf('\\') + 1));
+                    if (ValidFilename(s))
+                    {
+                        toList.Add(s.Substring(textBoxToPath.Text.Length + 1));
+                    }
                 }
             }
             foreach (string s in fromList)
@@ -65,11 +75,27 @@ namespace FolderCompare
                     listBoxMain.Items.Add($"--> {s}");
                 }
             }
+            foreach (string subDir in Directory.EnumerateDirectories(fromPath))
+            {
+                string subDirBase = Path.GetFileName(subDir);
+                if (ValidDirectory(subDirBase))
+                {
+                    DoCompare(Path.Combine(fromPath, subDirBase), Path.Combine(toPath, subDirBase));
+                }
+            }
+        }
+
+        private bool ValidDirectory(string s)
+        {
+            if (s.StartsWith(".")) return false;
+            return true;
         }
 
         private bool ValidFilename(string s)
         {
             if (s.EndsWith(".txt")) return true;
+            if (s.EndsWith(".html")) return true;
+            if (s.EndsWith(".css")) return true;
             return false;
         }
     }
